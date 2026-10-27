@@ -1,0 +1,31 @@
+services:
+  ocr:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ocr_api
+    networks:
+      - n8n-net
+    restart: unless-stopped
+    ports:
+      # Solo localhost. n8n lo alcanza por n8n-net con el nombre del contenedor;
+      # el puerto publicado es para curl desde el host. Estaba en 0.0.0.0 y
+      # ademas expuesto por nginx, asi que cualquiera podia mandarle trabajo.
+      - "127.0.0.1:8084:8084"
+    environment:
+      # Segundos sin peticiones antes de descargar los modelos de MinerU de la GPU.
+      - OCR_IDLE_UNLOAD_SECONDS=${OCR_IDLE_UNLOAD_SECONDS:-3600}
+      - OCR_QUEUE_MAXSIZE=${OCR_QUEUE_MAXSIZE:-2}
+      - OCR_QUEUE_RETRY_AFTER_SECONDS=${OCR_QUEUE_RETRY_AFTER_SECONDS:-30}
+
+    deploy:
+        resources:
+          reservations:
+            devices:
+              - capabilities: [gpu]
+    runtime: nvidia
+
+networks:
+  n8n-net:
+    external: true  # Usa la red existente
+    
